@@ -116,18 +116,16 @@ else
   exit 1
 fi
 
-
-# Check that server is IKEv2-compatible
+# Fetch IKEv2-compatible VPNs
 vpn_list=$(curl -s 'https://nordvpn.com/api/server' | jq -r '.[] | select('.features.ikev2' == true) | .domain' | grep "$country_code" | head -${how_many_vpns})
 
-# Add VPNs until either the user's requested number
-# or the end of VPN list is reached.
+# Add the VPN config files to Network Manager
 for vpn in $vpn_list; do
 
   output_file="/etc/NetworkManager/system-connections/${vpn}.ikev2"
 
-  # Make sure the output file doesn't exist
-  # If it doesn't, write the file and set its permissions.
+  # If the file already exists, skip it.
+  # If it doesn't, write it and set permissions.
   if ! test -f "$output_file"; then
     write_config_file "$vpn" "$nordvpn_username" "$certificate_file" > "$output_file"
     chmod 600 "$output_file"
