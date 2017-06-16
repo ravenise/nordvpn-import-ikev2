@@ -27,7 +27,7 @@ write_config_file () {
 
 cat << EOF
 [connection]
-id=${vpn}-ikev2
+id=${vpn}.ikev2
 uuid=$(uuidgen)
 type=vpn
 autoconnect=false
