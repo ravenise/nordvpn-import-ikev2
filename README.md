@@ -28,3 +28,6 @@ Take a look at https://nordvpn.com/servers/ for available country codes.
 
 ### Notes
 I've only tested this with Ubuntu 17.04. Currently (2017-06-17), Ubuntu 16.04/16.10 is having issues with charon-nm that I was unable to resolve even by building Strongswan from source with instructions from the official site. 17.04 fixes these. Other distributions/versions may work, but you'll likely have to tweak a few things.
+
+### Credits:
+Inspired by Milosz Galazka's [nordvpn-import script](https://repository.sleeplessbeastie.eu/milosz/nordvpn-import/) for tcp/udp.
