@@ -71,19 +71,25 @@ usage () {
 
 # Check that user has root access
 if [ ! "$USER" == "root" ]; then
-  printf "\nError: you need root privileges to run this script."
+  printf "Error: you need root privileges to run this script."
   exit 1
 fi
 
 # Check that network-manager-strongswan is present
 if ! dpkg-query -s network-manager-strongswan 1>/dev/null 2>&-; then
-  printf "\nError: you need to install network-manager-strongswan."
+  printf "Error: you need to install network-manager-strongswan."
+  exit 1
+fi
+
+# Make sure that username is present.
+if [ -z ${nordvpn_username} ]; then
+  echo "Error: you need to set your username."
   exit 1
 fi
 
 # Make sure the user's certificate file exists.
 if ! test -f "$certificate_file"; then
-  printf "\nError: path to certificate file isn't valid."
+  echo "Error: path to certificate file isn't valid."
   exit 1
 fi
 
@@ -95,10 +101,12 @@ if [ "$#" -ne 2 ]; then
 fi
 
 # Check that country code parameter has two letters.
+# If it does, grab the API and use jq to filter.
 if [[ $1 =~ ^[a-z]{,2}$ ]]; then
-  country_code="$1"
+  country_code="\"${1^^}\""
+  vpn_list=$(curl -s 'https://nordvpn.com/api/server' | jq -r '.[] | select('.features.ikev2' == true and .flag == '${country_code}') | .domain')
 elif [ "$1" = "all" ]; then
-  country_code='' # This will fetch everything
+  vpn_list=$(curl -s 'https://nordvpn.com/api/server' | jq -r '.[] | select('.features.ikev2' == true) | .domain')
 else
   printf "\nError: '$1' is not a valid country code (e.g. se, dk).\n"
   usage
@@ -106,18 +114,16 @@ else
 fi
 
 # Check that the server number parameter is a positive integer.
+# If so, grab the first n VPNs.
 if [[ "$2" =~ ^[0-9]+$ ]]; then
-    how_many_vpns=$2
+  vpn_list=$(printf "${vpn_list[@]}" | head -$2)
 elif [ "$2" = "all" ]; then
-  how_many_vpns=9999 # All of them, basically.
+  : # Do nothing (use the whole list of VPNs)
 else
   printf "\nError: invalid number of VPNs.\n"
   usage
   exit 1
 fi
-
-# Fetch IKEv2-compatible VPNs
-vpn_list=$(curl -s 'https://nordvpn.com/api/server' | jq -r '.[] | select('.features.ikev2' == true) | .domain' | grep "$country_code" | head -${how_many_vpns})
 
 # Add the VPN config files to Network Manager
 for vpn in $vpn_list; do
